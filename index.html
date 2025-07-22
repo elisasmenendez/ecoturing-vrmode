@@ -10,8 +10,13 @@
       html, body { margin: 0; height: 100%; overflow: hidden; }
     </style>
   </head>
+  <script>
+      document.querySelector('a-scene').addEventListener('loaded', function () {
+        this.enterVR();
+      });
+    </script>
   <body>
-    <a-scene vr-mode-ui="enabled: true" embedded>
+    <a-scene vr-mode-ui="enabled: true">
       <a-assets>
         <img id="panorama" src="Q360_20240713_135032_000001_Output.JPG" crossorigin="anonymous">
       </a-assets>
