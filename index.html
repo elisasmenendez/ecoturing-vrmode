@@ -10,11 +10,6 @@
       html, body { margin: 0; height: 100%; overflow: hidden; }
     </style>
   </head>
-  <script>
-      document.querySelector('a-scene').addEventListener('loaded', function () {
-        this.enterVR();
-      });
-    </script>
   <body>
     <a-scene vr-mode-ui="enabled: true">
       <a-assets>
@@ -23,5 +18,10 @@
       <a-sky src="#panorama" rotation="0 -90 0"></a-sky>
       <a-camera position="0 1.6 0" wasd-controls-enabled="false" look-controls="true"></a-camera>
     </a-scene>
+    <script>
+      document.querySelector('a-scene').addEventListener('loaded', function () {
+        this.enterVR();
+      });
+    </script>
   </body>
 </html>
