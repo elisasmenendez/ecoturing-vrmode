@@ -1,114 +1,226 @@
-<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>VR 360 com Botão no VR</title>
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-      html, body { margin: 0; height: 100%; overflow: hidden; }
-    </style>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, user-scalable=no"
+    />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <link rel="stylesheet" href="css/common.css" />
+    <title>360 + Gaze Toggle (WebXR Polyfill)</title>
   </head>
 
   <body>
-    <a-scene vr-mode-ui="enabled: true">
-      <a-assets>
-        <img id="panorama1" src="Cantagalo.JPG" crossorigin="anonymous" />
-        <img id="panorama2" src="Peixe.JPG" crossorigin="anonymous" />
-      </a-assets>
+    <header>
+      <details open>
+        <summary>360 + Gaze Toggle (WebXR Polyfill)</summary>
+        <p>
+          Olhe para o hotspot (no centro, à frente) por ~1s para alternar Cantagalo ⇄ Peixe.
+          <a class="back" href="./">Back</a>
+        </p>
+      </details>
+    </header>
 
-      <a-sky id="sky" src="#panorama1" rotation="0 -90 0"></a-sky>
+    <main style="text-align: center">
+      <p>Clique 'Enter XR' para ver o conteúdo</p>
+      <p><small>Dica iPhone: sirva em HTTPS (ou localhost) para sensores.</small></p>
+    </main>
 
-      <!-- Camera + cursor (mira no centro). 
-           - fuse=false: clique/toque para acionar
-           - Para "fuse" (olhar por 1s e ativar), mude fuse=true e ajuste fuseTimeout -->
-      <a-camera position="0 1.6 0" wasd-controls-enabled="false" look-controls="true">
-        <a-cursor
-          id="cursor"
-          fuse="true" 
-	  fuseTimeout="900"
-          raycaster="objects: .clickable"
-          material="color: white; shader: flat"
-          geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.016">
-        </a-cursor>
+    <script type="module">
+      import { WebXRButton } from "./js/util/webxr-button.js";
+      import { Scene } from "./js/render/scenes/scene.js";
+      import { Renderer, createWebGLContext } from "./js/render/core/renderer.js";
+      import { SkyboxNode } from "./js/render/nodes/skybox.js";
+      import { QueryArgs } from "./js/util/query-args.js";
 
-        <!-- Painel flutuante preso na câmera (sempre na frente do usuário) -->
-        <a-entity position="0 -0.35 -1.1">
-          <!-- Fundo do botão -->
-          <a-plane
-            id="btnToggle"
-            class="clickable"
-            width="0.7"
-            height="0.22"
-            color="#111"
-            opacity="0.75"
-            material="shader: flat"
-            geometry="primitive: plane"
-          ></a-plane>
+      // Polyfill (como no sample)
+      import WebXRPolyfill from "./js/third-party/webxr-polyfill/build/webxr-polyfill.module.js";
+      if (QueryArgs.getBool("usePolyfill", true)) {
+        new WebXRPolyfill();
+      }
 
-          <!-- Borda (efeito visual) -->
-          <a-plane
-            width="0.72"
-            height="0.24"
-            color="#fff"
-            opacity="0.18"
-            position="0 0 -0.01"
-            material="shader: flat"
-          ></a-plane>
+      // XR globals.
+      let xrButton = null;
+      let xrRefSpace = null;
 
-          <!-- Texto do botão -->
-          <a-text
-            value="Trocar imagem"
-            align="center"
-            color="#fff"
-            width="2"
-            position="0 0 0.01"
-          ></a-text>
+      // WebGL globals.
+      let gl = null;
+      let renderer = null;
 
-          <!-- “Status” opcional -->
-          <a-text
-            id="statusText"
-            value="Atual: Cantagalo"
-            align="center"
-            color="#ddd"
-            width="2"
-            position="0 -0.18 0.01"
-            scale="0.8 0.8 0.8"
-          ></a-text>
-        </a-entity>
-      </a-camera>
+      // -------------- CENA --------------
+      let scene = new Scene();
 
-      <script>
-        const sky = document.getElementById("sky");
-        const btn = document.getElementById("btnToggle");
-        const statusText = document.getElementById("statusText");
+      // Seus panoramas (ajuste paths conforme seu repo)
+      const panoramas = [
+        { url: "Cantagalo.JPG", label: "Cantagalo" },
+        { url: "Peixe.JPG", label: "Peixe" },
+      ];
 
-        const panoramas = [
-          { src: "#panorama1", label: "Cantagalo" },
-          { src: "#panorama2", label: "Peixe" }
-        ];
-        let current = 0;
+      let current = 0;
+      let skybox = null;
 
-        function setPanorama(index) {
-          current = index;
-          sky.setAttribute("src", panoramas[current].src);
-          statusText.setAttribute("value", `Atual: ${panoramas[current].label}`);
+      function buildSkybox(url) {
+        // SkyboxNode no webxr-samples costuma aceitar uma imagem equiretangular.
+        // Se a sua versão exigir outro formato, me diga que eu adapto.
+        return new SkyboxNode({ url });
+      }
+
+      function setPanorama(index) {
+        current = index;
+
+        // Remove skybox antigo e adiciona novo (forma mais robusta)
+        if (skybox && scene.removeNode) scene.removeNode(skybox);
+        // Se sua Scene não tiver removeNode, a alternativa é recriar Scene (mais pesado).
+        skybox = buildSkybox(panoramas[current].url);
+        scene.addNode(skybox);
+
+        // Atualiza texto na página (debug)
+        const p = document.querySelector("main p");
+        if (p) p.textContent = `Panorama atual: ${panoramas[current].label} (olhe 1s para trocar)`;
+      }
+
+      // Inicializa com Cantagalo
+      setPanorama(0);
+
+      // -------------- GAZE / FUSE --------------
+      // Um “hotspot” fixo no mundo (à frente do ponto inicial).
+      // Você precisa olhar para ele por ~1s para trocar.
+      const hotspotWorldPos = { x: 0, y: 1.6, z: -2.0 };
+
+      // Parâmetros do gaze
+      const GAZE_THRESHOLD_DOT = Math.cos((12 * Math.PI) / 180); // ~12 graus
+      const FUSE_MS = 900;
+
+      let gazeStart = null;
+      let lastToggleAt = 0;
+      const COOLDOWN_MS = 600;
+
+      function getForwardFromQuaternion(q) {
+        // Forward no WebXR geralmente é -Z no espaço do viewer.
+        // Converte quaternion -> vetor forward (0,0,-1) rotacionado por q.
+        const x = q.x, y = q.y, z = q.z, w = q.w;
+        // rotacionar v=(0,0,-1)
+        // fórmula otimizada:
+        const fx = -2 * (x * z + w * y);
+        const fy = -2 * (y * z - w * x);
+        const fz = -1 + 2 * (x * x + y * y);
+        return { x: fx, y: fy, z: fz };
+      }
+
+      function dot(a, b) {
+        return a.x * b.x + a.y * b.y + a.z * b.z;
+      }
+
+      function normalize(v) {
+        const len = Math.hypot(v.x, v.y, v.z) || 1;
+        return { x: v.x / len, y: v.y / len, z: v.z / len };
+      }
+
+      function sub(a, b) {
+        return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z };
+      }
+
+      function initXR() {
+        xrButton = new WebXRButton({
+          onRequestSession,
+          onEndSession,
+        });
+        document.querySelector("header").appendChild(xrButton.domElement);
+
+        if (navigator.xr) {
+          navigator.xr.isSessionSupported("immersive-vr").then((supported) => {
+            xrButton.enabled = supported;
+          });
+        }
+      }
+
+      function onRequestSession() {
+        return navigator.xr.requestSession("immersive-vr").then(onSessionStarted);
+      }
+
+      function onSessionStarted(session) {
+        xrButton.setSession(session);
+        session.addEventListener("end", onSessionEnded);
+
+        gl = createWebGLContext({ xrCompatible: true });
+        renderer = new Renderer(gl);
+        scene.setRenderer(renderer);
+
+        session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
+
+        session.requestReferenceSpace("local").then((refSpace) => {
+          xrRefSpace = refSpace;
+          session.requestAnimationFrame(onXRFrame);
+        });
+      }
+
+      function onEndSession(session) {
+        session.end();
+      }
+
+      function onSessionEnded() {
+        xrButton.setSession(null);
+        renderer = null;
+      }
+
+      function onXRFrame(t, frame) {
+        const session = frame.session;
+        session.requestAnimationFrame(onXRFrame);
+
+        scene.startFrame();
+
+        const pose = frame.getViewerPose(xrRefSpace);
+        if (pose) {
+          const glLayer = session.renderState.baseLayer;
+          gl.bindFramebuffer(gl.FRAMEBUFFER, glLayer.framebuffer);
+          gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+          // --- GAZE CHECK: usa a 1ª view (já serve para fuse) ---
+          // Pega posição e orientação do viewer
+          const view0 = pose.views[0];
+          const viewerPos = view0.transform.position;
+          const viewerOri = view0.transform.orientation;
+
+          const forward = normalize(getForwardFromQuaternion(viewerOri));
+          const toHotspot = normalize(
+            sub(hotspotWorldPos, { x: viewerPos.x, y: viewerPos.y, z: viewerPos.z })
+          );
+
+          const d = dot(forward, toHotspot);
+          const now = performance.now();
+
+          const gazing = d >= GAZE_THRESHOLD_DOT;
+
+          if (gazing) {
+            if (gazeStart == null) gazeStart = now;
+
+            const elapsed = now - gazeStart;
+            const cooldownOk = now - lastToggleAt > COOLDOWN_MS;
+
+            if (elapsed >= FUSE_MS && cooldownOk) {
+              // alterna panorama
+              const next = (current + 1) % panoramas.length;
+              setPanorama(next);
+              lastToggleAt = now;
+              gazeStart = null; // reseta
+            }
+          } else {
+            gazeStart = null;
+          }
+
+          // Render normal do skybox para cada view
+          for (const view of pose.views) {
+            const viewport = glLayer.getViewport(view);
+            gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
+            scene.draw(view.projectionMatrix, view.transform);
+          }
         }
 
-        // Clique/toque no “botão” (painel) para alternar
-        btn.addEventListener("click", () => {
-          const next = (current + 1) % panoramas.length;
-          setPanorama(next);
-        });
+        scene.endFrame();
+      }
 
-        // Feedback visual quando o cursor passa por cima
-        btn.addEventListener("mouseenter", () => {
-          btn.setAttribute("opacity", "0.95");
-        });
-        btn.addEventListener("mouseleave", () => {
-          btn.setAttribute("opacity", "0.75");
-        });
-      </script>
-    </a-scene>
+      initXR();
+    </script>
   </body>
 </html>
