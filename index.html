@@ -1,27 +1,114 @@
-
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8">
-    <title>Visualização 360°</title>
+    <meta charset="utf-8" />
+    <title>VR 360 com Botão no VR</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
       html, body { margin: 0; height: 100%; overflow: hidden; }
     </style>
   </head>
+
   <body>
     <a-scene vr-mode-ui="enabled: true">
       <a-assets>
-        <img id="panorama" src="Cantagalo.JPG" crossorigin="anonymous">
+        <img id="panorama1" src="Cantagalo.JPG" crossorigin="anonymous" />
+        <img id="panorama2" src="Peixe.JPG" crossorigin="anonymous" />
       </a-assets>
-      <a-sky src="#panorama" rotation="0 -90 0"></a-sky>
-      <a-camera position="0 1.6 0" wasd-controls-enabled="false" look-controls="true"></a-camera>
+
+      <a-sky id="sky" src="#panorama1" rotation="0 -90 0"></a-sky>
+
+      <!-- Camera + cursor (mira no centro). 
+           - fuse=false: clique/toque para acionar
+           - Para "fuse" (olhar por 1s e ativar), mude fuse=true e ajuste fuseTimeout -->
+      <a-camera position="0 1.6 0" wasd-controls-enabled="false" look-controls="true">
+        <a-cursor
+          id="cursor"
+          fuse="true" 
+	  fuseTimeout="900"
+          raycaster="objects: .clickable"
+          material="color: white; shader: flat"
+          geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.016">
+        </a-cursor>
+
+        <!-- Painel flutuante preso na câmera (sempre na frente do usuário) -->
+        <a-entity position="0 -0.35 -1.1">
+          <!-- Fundo do botão -->
+          <a-plane
+            id="btnToggle"
+            class="clickable"
+            width="0.7"
+            height="0.22"
+            color="#111"
+            opacity="0.75"
+            material="shader: flat"
+            geometry="primitive: plane"
+          ></a-plane>
+
+          <!-- Borda (efeito visual) -->
+          <a-plane
+            width="0.72"
+            height="0.24"
+            color="#fff"
+            opacity="0.18"
+            position="0 0 -0.01"
+            material="shader: flat"
+          ></a-plane>
+
+          <!-- Texto do botão -->
+          <a-text
+            value="Trocar imagem"
+            align="center"
+            color="#fff"
+            width="2"
+            position="0 0 0.01"
+          ></a-text>
+
+          <!-- “Status” opcional -->
+          <a-text
+            id="statusText"
+            value="Atual: Cantagalo"
+            align="center"
+            color="#ddd"
+            width="2"
+            position="0 -0.18 0.01"
+            scale="0.8 0.8 0.8"
+          ></a-text>
+        </a-entity>
+      </a-camera>
+
+      <script>
+        const sky = document.getElementById("sky");
+        const btn = document.getElementById("btnToggle");
+        const statusText = document.getElementById("statusText");
+
+        const panoramas = [
+          { src: "#panorama1", label: "Cantagalo" },
+          { src: "#panorama2", label: "Peixe" }
+        ];
+        let current = 0;
+
+        function setPanorama(index) {
+          current = index;
+          sky.setAttribute("src", panoramas[current].src);
+          statusText.setAttribute("value", `Atual: ${panoramas[current].label}`);
+        }
+
+        // Clique/toque no “botão” (painel) para alternar
+        btn.addEventListener("click", () => {
+          const next = (current + 1) % panoramas.length;
+          setPanorama(next);
+        });
+
+        // Feedback visual quando o cursor passa por cima
+        btn.addEventListener("mouseenter", () => {
+          btn.setAttribute("opacity", "0.95");
+        });
+        btn.addEventListener("mouseleave", () => {
+          btn.setAttribute("opacity", "0.75");
+        });
+      </script>
     </a-scene>
-    <!-- <script>
-      document.querySelector('a-scene').addEventListener('loaded', function () {
-        this.enterVR();
-      });
-    </script> -->
   </body>
 </html>
