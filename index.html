@@ -1,116 +1,209 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
   <head>
     <meta charset="utf-8">
-    <title>Visualização 360°</title>
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>EcoTuring VR</title>
     <style>
-      html, body { margin: 0; height: 100%; overflow: hidden; }
+      * {
+        box-sizing: border-box;
+      }
+
+      :root {
+        --bg: #05070b;
+        --bg-secondary: #0c1118;
+        --card: rgba(18, 24, 34, 0.92);
+        --border: rgba(120, 255, 214, 0.15);
+        --text: #edf6f3;
+        --muted: #a8bbb3;
+        --accent: #64f3d0;
+        --accent-2: #9af26b;
+        --shadow: 0 18px 50px rgba(0, 0, 0, 0.38);
+      }
+
+      html, body {
+        margin: 0;
+        min-height: 100%;
+        font-family: Arial, Helvetica, sans-serif;
+        background:
+          radial-gradient(circle at top, rgba(100, 243, 208, 0.12), transparent 30%),
+          radial-gradient(circle at right bottom, rgba(154, 242, 107, 0.10), transparent 28%),
+          linear-gradient(180deg, var(--bg) 0%, #020305 100%);
+        color: var(--text);
+      }
+
+      body {
+        padding: 32px 20px 48px;
+      }
+
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+
+      .hero {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 18px;
+        margin-bottom: 42px;
+      }
+
+      .logo {
+        width: 130px;
+        max-width: 42vw;
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 4vw, 3.2rem);
+        line-height: 1.1;
+      }
+
+      .subtitle {
+        margin: 0;
+        max-width: 760px;
+        color: var(--muted);
+        font-size: 1.05rem;
+        line-height: 1.6;
+      }
+
+      .section {
+        margin-bottom: 28px;
+      }
+
+      .section-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0 0 18px;
+        font-size: 1.45rem;
+      }
+
+      .section-title::before {
+        content: "";
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        box-shadow: 0 0 18px rgba(100, 243, 208, 0.55);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 18px;
+      }
+
+      .card {
+        background: linear-gradient(180deg, rgba(15, 21, 30, 0.96), var(--card));
+        border: 1px solid var(--border);
+        border-radius: 22px;
+        padding: 22px;
+        box-shadow: var(--shadow);
+        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(154, 242, 107, 0.35);
+        box-shadow: 0 22px 55px rgba(0, 0, 0, 0.45);
+      }
+
+      .card h3 {
+        margin: 0 0 10px;
+        font-size: 1.15rem;
+      }
+
+      .card p {
+        margin: 0 0 18px;
+        color: var(--muted);
+        line-height: 1.55;
+        font-size: 0.97rem;
+      }
+
+      .button {
+        display: inline-block;
+        text-decoration: none;
+        color: #03110d;
+        font-weight: bold;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        padding: 12px 18px;
+        border-radius: 999px;
+        transition: transform 0.2s ease, filter 0.2s ease;
+      }
+
+      .button:hover {
+        transform: scale(1.03);
+        filter: brightness(1.05);
+      }
+
+      .footer {
+        margin-top: 36px;
+        text-align: center;
+        color: #7e938c;
+        font-size: 0.95rem;
+      }
+
+      @media (max-width: 640px) {
+        body {
+          padding: 24px 16px 36px;
+        }
+
+        .card {
+          padding: 18px;
+        }
+      }
     </style>
   </head>
   <body>
-    <a-scene vr-mode-ui="enabled: true">
-      <a-assets>
-        <img id="panorama1" src="Poco_Urubu.jpg" crossorigin="anonymous">
-        <img id="panorama2" src="Ze_Pezao_2.jpg" crossorigin="anonymous">
-        <img id="panorama3" src="Cantagalo.JPG" crossorigin="anonymous">
-      </a-assets>
+    <main class="container">
+      <section class="hero">
+        <img class="logo" src="logo.jpeg" alt="Logo do EcoTuring">
+        <h1>EcoTuring VR</h1>
+        <p class="subtitle">
+          Explore experiências imersivas em 360° organizadas por bioma. Escolha uma trilha para visualizar os cenários da Caatinga e da Mata Atlântica com a estética do EcoTuring.
+        </p>
+      </section>
 
-      <a-sky id="sky" src="#panorama1" rotation="0 -90 0"></a-sky>
+      <section class="section">
+        <h2 class="section-title">Trilhas na Caatinga</h2>
+        <div class="grid">
+          <article class="card">
+            <h3>Riacho Arrozinho</h3>
+            <p>Visualização 360° do cenário Riacho Arrozinho na Caatinga.</p>
+            <a class="button" href="caatinga/riacho_arrozinho_1.html">Abrir trilha</a>
+          </article>
 
-      <a-camera position="0 1.6 0" wasd-controls-enabled="false" look-controls="true">
-        <a-cursor
-          fuse="true"
-          fuseTimeout="1200"
-          raycaster="objects: .clickable"
-          geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.016"
-          material="shader: flat; color: white">
-        </a-cursor>
+          <article class="card">
+            <h3>Zé Pezão</h3>
+            <p>Explore a paisagem da trilha Zé Pezão em modo imersivo.</p>
+            <a class="button" href="caatinga/ze_pezao_2.html">Abrir trilha</a>
+          </article>
 
-        <!-- Barra de progresso do gaze -->
-        <a-entity
-          id="progressRing"
-          geometry="primitive: ring; radiusInner: 0.018; radiusOuter: 0.022"
-          material="shader: flat; color: #00FFAA; opacity: 0.9"
-          scale="0 0 0"
-          position="0 0 -0.001"
-          animation__start="property: scale; to: 1 1 1; dur: 1200; startEvents: mouseenter"
-          animation__reset="property: scale; to: 0 0 0; dur: 0; startEvents: mouseleave">
-        </a-entity>
+          <article class="card">
+            <h3>Poço do Urubu</h3>
+            <p>Acesse a experiência 360° do Poço do Urubu.</p>
+            <a class="button" href="caatinga/poco_urubu.html">Abrir trilha</a>
+          </article>
+        </div>
+      </section>
 
-        <a-entity position="0 -0.35 -1.1">
-          <a-plane
-            id="btnToggle"
-            class="clickable"
-            width="0.85"
-            height="0.24"
-            color="#111"
-            opacity="0.75"
-            material="shader: flat">
-          </a-plane>
+      <section class="section">
+        <h2 class="section-title">Trilhas na Mata Atlântica</h2>
+        <div class="grid">
+          <article class="card">
+            <h3>Cantagalo</h3>
+            <p>Entre na experiência 360° da trilha Cantagalo, na Mata Atlântica.</p>
+            <a class="button" href="mata_atlantica/cantagalo.html">Abrir trilha</a>
+          </article>
+        </div>
+      </section>
 
-          <a-text
-            value="Trocar imagem"
-            align="center"
-            color="#fff"
-            width="2.4"
-            position="0 0.03 0.01">
-          </a-text>
-
-          <a-text
-            id="statusText"
-            value="Atual: Poço Urubu"
-            align="center"
-            color="#ddd"
-            width="2.2"
-            position="0 -0.12 0.01"
-            scale="0.85 0.85 0.85">
-          </a-text>
-        </a-entity>
-      </a-camera>
-    </a-scene>
-
-    <script>
-      const sky = document.getElementById("sky");
-      const btn = document.getElementById("btnToggle");
-      const statusText = document.getElementById("statusText");
-      const progressRing = document.getElementById("progressRing");
-
-      const panoramas = [
-        { src: "#panorama1", label: "Poço Urubu" },
-        { src: "#panorama2", label: "Zé Pezão 2" },
-        { src: "#panorama3", label: "Cantagalo" }
-      ];
-
-      let current = 0;
-
-      function setPanorama(index) {
-        current = index;
-        sky.setAttribute("src", panoramas[current].src);
-        statusText.setAttribute("value", `Atual: ${panoramas[current].label}`);
-      }
-
-      btn.addEventListener("click", () => {
-        const next = (current + 1) % panoramas.length;
-        setPanorama(next);
-      });
-
-      btn.addEventListener("mouseenter", () => {
-        btn.setAttribute("opacity", "0.95");
-      });
-
-      btn.addEventListener("mouseleave", () => {
-        btn.setAttribute("opacity", "0.75");
-      });
-
-      btn.addEventListener("mouseenter", () => {
-        progressRing.emit("mouseenter");
-      });
-
-      btn.addEventListener("mouseleave", () => {
-        progressRing.emit("mouseleave");
-      });
-    </script>
+      <p class="footer">EcoTuring • Trilhas imersivas em realidade virtual</p>
+    </main>
   </body>
 </html>
